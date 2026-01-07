@@ -1,4 +1,3 @@
-// frontend/src/pages/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
 
 export default function Dashboard({ onLogout }) {
@@ -10,32 +9,36 @@ export default function Dashboard({ onLogout }) {
   const [note, setNote] = useState('');
   const [isLocked, setIsLocked] = useState(false);
 
-  // নতুন: ডাটাবেস থেকে সাইট লোড করার জন্য
+  // New: States for loading data
   const [sites, setSites] = useState([]);
-  // নতুন: লগইন করা ইউজারের নাম
   const [userName, setUserName] = useState('লোড হচ্ছে...');
 
   const token = localStorage.getItem('token');
+  
+  // Dynamic API URL from environment variables
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-  // সাইট লোড করুন
+  // Load Sites
   useEffect(() => {
     const fetchSites = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/sites', {
+        const res = await fetch(`${API_URL}/api/sites`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) {
           const data = await res.json();
           setSites(Array.isArray(data) ? data : []);
+        } else {
+            console.error("Failed to fetch sites:", res.status);
         }
       } catch (err) {
-        console.log('সাইট লোড করতে সমস্যা');
+        console.log('সাইট লোড করতে সমস্যা:', err);
       }
     };
-    fetchSites();
-  }, [token]);
+    if (token) fetchSites();
+  }, [token, API_URL]);
 
-  // ইউজারের নাম বের করুন (JWT থেকে)
+  // Extract User Name from JWT
   useEffect(() => {
     if (token) {
       try {
@@ -123,7 +126,7 @@ export default function Dashboard({ onLogout }) {
     };
 
     try {
-      const response = await fetch('http://localhost:5000/api/expenses', {
+      const response = await fetch(`${API_URL}/api/expenses`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -339,13 +342,11 @@ export default function Dashboard({ onLogout }) {
             />
           </div>
 
-          {/* বাকি সব আপনার কোড অপরিবর্তিত */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontWeight: 'bold', color: '#444' }}>খরচ বিবরণী:</span>
             {!isLocked && <button className="btn-add" onClick={addNewRow}>[ সারি যুক্ত করুন ]</button>}
           </div>
 
-          {/* টেবিল, টোটাল, ব্যালেন্স — আপনার আগের মতোই */}
           <table>
             <thead>
               <tr>
