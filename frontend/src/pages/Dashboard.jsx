@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 
 export default function Dashboard({ onLogout }) {
-  const [dateTime, setDateTime] = useState(new Date().toLocaleString('bn-BD'));
+  // তারিখের জন্য স্টেট (ডিফল্ট আজকের তারিখ)
+  const today = new Date().toISOString().split('T')[0];
+  const [selectedDate, setSelectedDate] = useState(today);
+
   const [siteName, setSiteName] = useState('');
   const [deposit, setDeposit] = useState(0);
   const [rows, setRows] = useState([{ id: 1, desc: '', amt: 0, cash: 0 }]);
@@ -9,14 +12,21 @@ export default function Dashboard({ onLogout }) {
   const [note, setNote] = useState('');
   const [isLocked, setIsLocked] = useState(false);
 
-  // New: States for loading data
   const [sites, setSites] = useState([]);
   const [userName, setUserName] = useState('লোড হচ্ছে...');
 
   const token = localStorage.getItem('token');
-  
-  // Dynamic API URL from environment variables
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+  // বাংলায় তারিখ দেখানোর ফাংশন
+  const formatBengaliDate = (dateStr) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('bn-BD', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
 
   // Load Sites
   useEffect(() => {
@@ -49,11 +59,6 @@ export default function Dashboard({ onLogout }) {
       }
     }
   }, [token]);
-
-  useEffect(() => {
-    const timer = setInterval(() => setDateTime(new Date().toLocaleString('bn-BD')), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   const addNewRow = () => {
     setRows([...rows, { id: rows.length + 1, desc: '', amt: 0, cash: 0 }]);
@@ -106,6 +111,7 @@ export default function Dashboard({ onLogout }) {
     const totals = calculateTotals();
 
     const expenseData = {
+      date: selectedDate,
       siteName,
       deposit,
       rows: rows.map(row => ({
@@ -115,6 +121,7 @@ export default function Dashboard({ onLogout }) {
       })),
       lastRowCash: parseFloat(lastRowCash) || 0,
       note,
+      userName, // ব্যাকএন্ডে ইউজার নেম পাঠানো হচ্ছে
       totals: {
         totalAmt: totals.totalAmt,
         grandTotalCash: totals.grandTotalCash,
@@ -154,6 +161,7 @@ export default function Dashboard({ onLogout }) {
           --bg-color: #e0e5ec;
           --shadow: 9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5);
           --inner-shadow: inset 6px 6px 12px #b8b9be, inset -6px -6px 12px #ffffff;
+          --accent-blue: #3498db;
         }
 
         .app-body {
@@ -197,11 +205,39 @@ export default function Dashboard({ onLogout }) {
           margin-bottom: 15px;
         }
 
-        .info-row {
+        /* Modern Modern Date UX */
+        .date-modern-container {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: var(--bg-color);
+          padding: 10px 15px;
+          border-radius: 12px;
+          box-shadow: var(--shadow);
+          margin-bottom: 20px;
+          cursor: pointer;
+          position: relative;
+          border: 1px solid rgba(255,255,255,0.4);
+        }
+
+        .date-modern-container:active {
+          box-shadow: var(--inner-shadow);
+        }
+
+        .date-modern-label {
           font-size: 13px;
-          margin-bottom: 8px;
-          border-bottom: 1px dashed #ccc;
-          padding-bottom: 5px;
+          color: #555;
+          font-weight: 600;
+        }
+
+        .date-modern-value {
+          font-size: 15px;
+          color: var(--accent-blue);
+          font-weight: bold;
+          background: white;
+          padding: 4px 12px;
+          border-radius: 8px;
+          box-shadow: var(--inner-shadow);
         }
 
         input, textarea, select {
@@ -319,8 +355,33 @@ export default function Dashboard({ onLogout }) {
           <div className="main-title">দৈনিক সাইট খরচ</div>
 
           <div className="info-section">
-            <div className="info-row"><b>তারিখ ও সময়:</b> {dateTime}</div>
-            <div className="info-row"><b>হিসাব প্রদানকারী:</b> {userName}</div>
+            
+            {/* মডার্ন তারিখ সেকশন */}
+            <div 
+              className="date-modern-container" 
+              onClick={() => !isLocked && document.getElementById('hidden-date-picker').showPicker?.()}
+            >
+              <span className="date-modern-label">📅 খরচের তারিখ:</span>
+              <span className="date-modern-value">{formatBengaliDate(selectedDate)}</span>
+              
+              <input
+                id="hidden-date-picker"
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                max={today}
+                disabled={isLocked}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  opacity: 0,
+                  cursor: 'pointer'
+                }}
+              />
+            </div>
 
             <label>সাইটের নাম:</label>
             <select value={siteName} onChange={(e) => setSiteName(e.target.value)} disabled={isLocked}>
@@ -393,8 +454,8 @@ export default function Dashboard({ onLogout }) {
                       type="number"
                       style={{boxShadow:'none', background:'transparent'}}
                       value={Math.floor(parseFloat(row.amt || 0) - parseFloat(row.cash || 0))}
-                      onChange={(e) => updateRow(index, 'due', e.target.value)}
                       disabled={isLocked}
+                      readOnly
                     />
                   </td>
                 </tr>

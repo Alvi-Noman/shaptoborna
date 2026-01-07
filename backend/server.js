@@ -22,7 +22,6 @@ if (!process.env.MONGO_URI) {
 }
 
 // ========== CORS CONFIGURATION ==========
-// Supports multiple URLs in .env like: https://site1.vercel.app,https://site2.vercel.app
 const envOrigins = process.env.FRONTEND_ORIGIN ? process.env.FRONTEND_ORIGIN.split(',') : [];
 
 const allowedOrigins = [
@@ -33,9 +32,7 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or Postman)
     if (!origin) return callback(null, true);
-    
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -53,7 +50,6 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => {
     console.error('MongoDB connection error:', err.message);
-    // Note: Not using process.exit(1) here to allow Mongoose to try reconnecting
   });
 
 // Import Models
@@ -77,7 +73,6 @@ const authenticateToken = (req, res, next) => {
 
 // ========== USER ROUTES ==========
 
-// Register (Public)
 app.post('/api/register', async (req, res) => {
   try {
     const { name, phone, password } = req.body;
@@ -97,7 +92,6 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// Login
 app.post('/api/login', async (req, res) => {
   try {
     const { phone, password } = req.body;
@@ -120,7 +114,7 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// ========== TEAMMEMBER ROUTES (Admin Only) ==========
+// ========== TEAMMEMBER ROUTES ==========
 
 app.post('/api/teammates', authenticateToken, async (req, res) => {
   try {
@@ -168,9 +162,11 @@ app.get('/api/sites', authenticateToken, async (req, res) => {
 
 app.post('/api/expenses', authenticateToken, async (req, res) => {
   try {
-    const { siteName, deposit, rows, lastRowCash, note, totals } = req.body;
+    // এখানে 'date' রিসিভ করা হচ্ছে যা ফ্রন্টএন্ড থেকে পাঠানো ইনপুট করা তারিখ
+    const { date, siteName, deposit, rows, lastRowCash, note, totals } = req.body; 
     const expense = new Expense({
       userId: req.user.id,
+      date: date, // Inputted Date সেভ করা হচ্ছে
       siteName,
       deposit: parseFloat(deposit) || 0,
       rows: rows.map(r => ({ desc: r.desc || '', amt: parseFloat(r.amt) || 0, cash: parseFloat(r.cash) || 0 })),
@@ -204,5 +200,4 @@ app.get('/api/expenses', async (req, res) => {
 // ========== START SERVER ==========
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(`Allowed origins: ${allowedOrigins.join(', ')}`);
 });

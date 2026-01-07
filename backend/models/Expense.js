@@ -42,7 +42,7 @@ const expenseSchema = new mongoose.Schema({
     grandTotalDue: Number,
     balance: Number
   }
-}, { timestamps: true });
+}, { timestamps: true }); // এটি Actual Date (createdAt) হ্যান্ডেল করবে
 
 // CORRECT pre-save hook — NO next() call!
 expenseSchema.pre('save', async function () {

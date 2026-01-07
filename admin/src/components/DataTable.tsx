@@ -50,7 +50,8 @@ export default function DataTable({
           <thead>
             <tr>
               <th>{labels.hSl}</th>
-              <th>{labels.hDt}</th>
+              {/* labels.hDt এর জায়গায় সরাসরি 'খরচের তারিখ' অথবা labels আপডেট করা হয়েছে */}
+              <th>খরচের তারিখ</th> 
               <th>{labels.hPr}</th>
               <th>{labels.hSt}</th>
               <th>{labels.hDp}</th>
@@ -73,6 +74,7 @@ export default function DataTable({
                 return (
                   <tr key={expense._id}>
                     <td>{index + 1}</td>
+                    {/* এখানে expense.date ব্যবহার করা হয়েছে যা ইউজারের ইনপুট করা তারিখ */}
                     <td>{formatDate(expense.date)}</td>
                     <td>{expense.userId?.name || 'Unknown'}</td>
                     <td>{expense.siteName}</td>
