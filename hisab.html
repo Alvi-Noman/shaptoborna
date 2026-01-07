@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>সাইট খরচ ক্যালকুলেটর</title>
+    <style>
+        :root {
+            --bg-color: #e0e5ec;
+            --shadow: 9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5);
+            --inner-shadow: inset 6px 6px 12px #b8b9be, inset -6px -6px 12px #ffffff;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            background-color: var(--bg-color); 
+            padding: 10px; margin: 0; 
+            display: flex; justify-content: center;
+            user-select: none; /* টেক্সট কপি করা বন্ধ করার জন্য */
+        }
+        
+        .calculator-frame {
+            background-color: var(--bg-color); padding: 15px; border-radius: 25px; box-shadow: var(--shadow);
+            max-width: 500px; width: 100%; box-sizing: border-box; position: relative;
+        }
+
+        .header-top { text-align: right; font-size: 12px; color: #666; margin-bottom: 2px; }
+        .main-title { text-align: center; font-size: 20px; font-weight: bold; color: #333; margin-bottom: 15px; }
+
+        .info-section { background: var(--bg-color); padding: 12px; border-radius: 15px; box-shadow: var(--inner-shadow); margin-bottom: 15px; }
+        .info-row { font-size: 13px; margin-bottom: 8px; border-bottom: 1px dashed #ccc; padding-bottom: 5px; }
+        
+        input[type="text"], input[type="number"] {
+            width: 100%; border: none; padding: 10px; border-radius: 8px; 
+            background: var(--bg-color); box-shadow: var(--inner-shadow); outline: none; margin-top: 5px; box-sizing: border-box;
+        }
+
+        #highlightBox {
+            position: absolute; background: #2c3e50; color: #00ff00; border-radius: 8px;
+            display: none; align-items: center; justify-content: center;
+            padding: 10px 15px; font-weight: bold; font-size: 16px; text-align: center;
+            border: 2px solid #00ff00; z-index: 1000; pointer-events: none; white-space: nowrap;
+        }
+
+        .table-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .btn-add { background: #28a745; color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; }
+
+        .table-container { width: 100%; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; background: #fff; border-radius: 8px; }
+        th { background: #444; color: white; padding: 8px; border: 1px solid #ddd; }
+        td { border: 1px solid #eee; padding: 5px; text-align: center; }
+
+        .desc-input { background: transparent; border: none; width: 100%; outline: none; }
+        .negative-text { color: red !important; font-weight: bold; }
+        .total-row { background: #333 !important; color: white; font-weight: bold; }
+
+        .balance-display { 
+            background: #d1d9e6; padding: 15px; border-radius: 15px; margin-top: 15px;
+            box-shadow: var(--inner-shadow); text-align: center; font-size: 16px; font-weight: bold;
+        }
+
+        textarea { 
+            width: 100%; border: none; padding: 10px; border-radius: 10px;
+            background: var(--bg-color); box-shadow: var(--inner-shadow); outline: none;
+            margin-top: 5px; min-height: 50px; resize: none;
+        }
+
+        .button-group { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+        .btn { padding: 12px 25px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; box-shadow: var(--shadow); }
+        .btn-cancel { background: #e74c3c; color: white; }
+        .btn-submit { background: #3498db; color: white; }
+        
+        /* লকড মোড স্টাইল */
+        .locked { pointer-events: none; opacity: 0.8; }
+    </style>
+</head>
+<body oncontextmenu="return false;"> <div id="highlightBox">বিবরণ: </div>
+
+<div class="calculator-frame" id="mainFrame">
+    <div class="header-top">ফরম - ক</div>
+    <div class="main-title">দৈনিক সাইট খরচ</div>
+
+    <div class="info-section">
+        <div class="info-row"><b>তারিখ ও সময়:</b> <span id="dateTime"></span></div>
+        <div class="info-row"><b>হিসাব প্রদানকারী:</b> <span id="userName">S.M. TANVIR</span></div>
+        <label>সাইটের নাম:</label>
+        <input type="text" id="siteName" placeholder="সাইটের নাম লিখুন...">
+        <label style="display:block; margin-top:10px;">জমা:</label>
+        <input type="number" id="depositAmount" oninput="calculateTotals()" placeholder="0.00">
+    </div>
+
+    <div class="table-controls">
+        <span style="font-weight:bold; color:#444;">খরচ বিবরণী:</span>
+        <button class="btn-add" id="addBtn" onclick="addNewRow()">[ সারি যুক্ত করুন ]</button>
+    </div>
+
+    <div class="table-container">
+        <table id="costTable">
+            <thead>
+                <tr>
+                    <th style="width:10%">ক্র:</th>
+                    <th>বিবরণ</th>
+                    <th>পরিমাণ</th>
+                    <th>নগদ</th>
+                    <th>বাকী</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+            <tfoot>
+                <tr style="background: #fff3cd; font-weight: bold;">
+                    <td id="lastSl">1</td>
+                    <td>বাকি পরিশোধ *</td>
+                    <td>---</td>
+                    <td><input type="number" id="lastRowCash" oninput="calculateTotals()" placeholder="0" style="width:100%; border:none; background:transparent; text-align:right;"></td>
+                    <td>---</td>
+                </tr>
+                <tr class="total-row">
+                    <td colspan="2">মোট</td>
+                    <td id="grandTotalAmt">0.00</td>
+                    <td id="grandTotalCash">0.00</td>
+                    <td id="grandTotalDue">0.00</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <div class="summary-section">
+        <div class="balance-display">
+            উদ্বৃত্ত / অতিরিক্ত: <span id="finalBalance">0.00</span>
+        </div>
+        <textarea id="mainNote" placeholder="মন্তব্য লিখুন..."></textarea>
+    </div>
+
+    <div class="button-group">
+        <button class="btn btn-cancel" id="cancelBtn" onclick="location.reload()">CANCEL</button>
+        <button class="btn btn-submit" id="submitBtn" onclick="submitData()">SUBMIT</button>
+    </div>
+</div>
+
+<script>
+    function updateDateTime() {
+        const now = new Date();
+        document.getElementById('dateTime').innerText = now.toLocaleString('bn-BD');
+    }
+    setInterval(updateDateTime, 1000);
+    updateDateTime();
+
+    const hBox = document.getElementById('highlightBox');
+    function setupHighlight(input) {
+        input.addEventListener('focus', function() {
+            const rect = this.getBoundingClientRect();
+            hBox.style.display = 'flex';
+            hBox.style.left = rect.left + 'px';
+            hBox.style.top = (window.scrollY + rect.top - 45) + 'px';
+            hBox.innerText = "বিবরণ: " + (this.value || "...");
+        });
+        input.addEventListener('input', function() { hBox.innerText = "বিবরণ: " + this.value; });
+        input.addEventListener('blur', () => hBox.style.display = 'none');
+    }
+
+    function addNewRow() {
+        const tableBody = document.getElementById('tableBody');
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="sl-no"></td>
+            <td><input type="text" class="desc-input dynamic-desc" placeholder="..."></td>
+            <td><input type="number" class="amt-input" oninput="calculateTotals()" style="width:100%; border:none; text-align:right;"></td>
+            <td><input type="number" class="cash-input" oninput="calculateTotals()" style="width:100%; border:none; text-align:right;"></td>
+            <td class="row-due">0.00</td>
+        `;
+        tableBody.appendChild(row);
+        setupHighlight(row.querySelector('.dynamic-desc'));
+        updateSerialNumbers();
+    }
+
+    function updateSerialNumbers() {
+        const rows = document.querySelectorAll('.sl-no');
+        rows.forEach((td, index) => { td.innerText = index + 1; });
+        document.getElementById('lastSl').innerText = rows.length + 1;
+    }
+
+    function calculateTotals() {
+        let totalAmt = 0, totalCash = 0, totalDue = 0;
+        document.querySelectorAll('#tableBody tr').forEach(row => {
+            const amt = parseFloat(row.querySelector('.amt-input').value) || 0;
+            const cash = parseFloat(row.querySelector('.cash-input').value) || 0;
+            const due = amt - cash;
+            row.querySelector('.row-due').innerText = due.toFixed(2);
+            totalAmt += amt; totalCash += cash; totalDue += due;
+        });
+        totalCash += parseFloat(document.getElementById('lastRowCash').value) || 0;
+        
+        document.getElementById('grandTotalAmt').innerText = totalAmt.toFixed(2);
+        document.getElementById('grandTotalCash').innerText = totalCash.toFixed(2);
+        document.getElementById('grandTotalDue').innerText = totalDue.toFixed(2);
+
+        const balance = (parseFloat(document.getElementById('depositAmount').value) || 0) - totalCash;
+        document.getElementById('finalBalance').innerText = balance.toFixed(2);
+        document.getElementById('finalBalance').style.color = balance < 0 ? 'red' : 'black';
+    }
+
+    // ৫. ডেটা সাবমিট এবং লক করা
+    function submitData() {
+        const site = document.getElementById('siteName').value;
+        if(!site) { alert("সাইটের নাম দিন!"); return; }
+
+        if(confirm("সাবমিট করলে এই ডেটা আর এডিট করা যাবে না। আপনি কি নিশ্চিত?")) {
+            // ১. ইনপুট লক করা
+            document.getElementById('mainFrame').classList.add('locked');
+            document.getElementById('submitBtn').style.display = 'none';
+            document.getElementById('addBtn').style.display = 'none';
+            
+            // ২. এখানে ডেটাবেজে পাঠানোর কোড যুক্ত হবে (ভবিষ্যতে)
+            alert("ডেটা সফলভাবে সংরক্ষিত হয়েছে!");
+        }
+    }
+
+    addNewRow();
+</script>
+</body>
+</html>

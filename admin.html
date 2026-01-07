@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>সপ্তবর্ণা এন্টারপ্রাইজ - ড্যাশবোর্ড</title>
+    <style>
+        @page { size: A4 landscape; margin: 10mm; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f7f9; display: flex; flex-direction: column; height: 100vh; }
+
+        .top-controls { position: fixed; top: 10px; right: 10px; display: flex; gap: 5px; z-index: 2000; }
+        .btn-ctrl { padding: 6px 10px; border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 11px; font-weight: bold; }
+
+        header { text-align: center; background: white; padding: 10px; border-bottom: 2px solid #34495e; }
+        .company-name { font-size: 18px; font-weight: bold; margin: 0; }
+        .sheet-title { font-size: 20px; font-weight: bold; color: #1a2a6c; margin: 5px 0; }
+
+        .summary-wrapper {
+            background: #fff; padding: 8px;
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 6px; border-bottom: 2px solid #34495e;
+        }
+        .summary-box { text-align: center; background: #f8f9fa; padding: 6px; border: 1px solid #2c3e50; border-radius: 5px; }
+        .summary-box label { display: block; font-weight: bold; font-size: 10px; margin-bottom: 2px; color: #555; }
+        .value { font-weight: bold; font-size: 13px; color: #2c3e50; }
+
+        .search-panel { background: #ffffff; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 10px; border-bottom: 1px solid #ddd; }
+        
+        /* তারিখ পাশাপাশি রাখার জন্য বিশেষ রো */
+        .date-row { display: flex; gap: 10px; justify-content: center; width: 100%; }
+        .search-group { display: flex; flex-direction: column; gap: 3px; }
+        .search-group label { font-weight: bold; font-size: 12px; }
+        .search-group input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+
+        .action-btns { display: flex; gap: 6px; justify-content: center; width: 100%; max-width: 400px; margin-top: 5px; }
+        .btn-main { flex: 1; padding: 10px 2px; border: none; border-radius: 4px; color: white; cursor: pointer; font-weight: bold; font-size: 11px; text-align: center; }
+
+        .bg-blue { background: #3498db; }
+        .bg-orange { background: #e67e22; }
+        .bg-dark { background: #2c3e50; }
+
+        .table-container { flex: 1; overflow-y: auto; padding: 0 10px; background: white; }
+        table { width: 100%; border-collapse: collapse; }
+        thead th { position: sticky; top: 0; background: #2c3e50; color: white; padding: 10px; border: 1px solid #444; font-size: 12px; }
+        tbody td { padding: 8px; text-align: center; border: 1px solid #ddd; font-size: 12px; }
+
+        footer { background: #2c3e50; color: white; padding: 8px; text-align: center; font-size: 12px; }
+
+        @media screen and (max-width: 768px) {
+            .table-container { display: none; }
+            .summary-wrapper { grid-template-columns: repeat(2, 1fr); }
+            .date-row { width: 95%; }
+            .date-row .search-group { flex: 1; }
+            .date-row input { width: 100% !important; box-sizing: border-box; }
+            .other-row { display: flex; flex-direction: column; width: 95%; gap: 10px; margin-top: 10px; }
+            .other-row input { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-controls no-print">
+        <button class="btn-ctrl bg-orange" onclick="toggleLang()">EN/BN</button>
+        <button class="btn-ctrl bg-dark" onclick="window.print()">Print</button>
+    </div>
+
+    <header>
+        <div class="company-name" id="comp-name">সপ্তবর্ণা এন্টারপ্রাইজ</div>
+        <div class="sheet-title" id="sheet-title">সামারি শীট</div>
+    </header>
+
+    <div class="summary-wrapper">
+        <div class="summary-box"><label id="l-dep">সর্বমোট জমা</label><div id="v-dep" class="value">০.০০</div></div>
+        <div class="summary-box"><label id="l-exp">সর্বমোট খরচ</label><div id="v-exp" class="value">০.০০</div></div>
+        <div class="summary-box"><label id="l-due">সর্বমোট বকেয়া</label><div id="v-due" class="value">০.০০</div></div>
+        <div class="summary-box"><label id="l-bal">সর্বমোট উদ্বৃত্ত</label><div id="v-bal" class="value">০.০০</div></div>
+    </div>
+
+    <div class="search-panel no-print">
+        <div class="date-row">
+            <div class="search-group">
+                <label id="s-from">তারিখ (হতে)</label>
+                <input type="date" id="dateFrom">
+            </div>
+            <div class="search-group">
+                <label id="s-to">তারিখ (পর্যন্ত)</label>
+                <input type="date" id="dateTo">
+            </div>
+        </div>
+
+        <div class="other-row" style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; width: 100%;">
+            <div class="search-group">
+                <label id="s-prov">হিসাব প্রদানকারী</label>
+                <input type="text" id="inProv" placeholder="..." style="width: 160px;">
+            </div>
+            <div class="search-group">
+                <label id="s-site">সাইটের নাম</label>
+                <input type="text" id="inSite" placeholder="..." style="width: 160px;">
+            </div>
+        </div>
+        
+        <div class="action-btns">
+            <button class="btn-main bg-blue" onclick="location.reload()" id="btn-ref">রিফ্রেশ</button>
+            <button class="btn-main bg-orange" onclick="copySummary()" id="btn-copy">কপি</button>
+            <button class="btn-main bg-dark" onclick="alert('খোঁজা হচ্ছে...')" id="btn-search">অনুসন্ধান</button>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th id="h-sl">ক্রঃ নং</th><th id="h-dt">তারিখ</th><th id="h-pr">প্রদানকারী</th><th id="h-st">সাইট</th><th id="h-dp">জমা</th><th id="h-ex">খরচ</th><th id="h-bl">উদ্বৃত্ত</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+    <footer id="footerText">সর্বমোট উদ্বৃত্ত: ০.০০</footer>
+
+    <script>
+        const translations = {
+            bn: { comp: "সপ্তবর্ণা এন্টারপ্রাইজ", title: "সামারি শীট", sFrom: "তারিখ (হতে)", sTo: "তারিখ (পর্যন্ত)", sProv: "প্রদানকারী", sSite: "সাইট", bRef: "রিফ্রেশ", bCopy: "কপি", bSearch: "অনুসন্ধান", foot: "সর্বমোট উদ্বৃত্ত: " },
+            en: { comp: "Saptabarna Enterprise", title: "Summary Sheet", sFrom: "Date (From)", sTo: "Date (To)", sProv: "Provider", sSite: "Site", bRef: "Refresh", bCopy: "Copy", bSearch: "Search", foot: "Total Balance: " }
+        };
+
+        let currentLang = 'bn';
+
+        function toggleLang() {
+            currentLang = currentLang === 'bn' ? 'en' : 'bn';
+            const lang = translations[currentLang];
+            document.getElementById('comp-name').innerText = lang.comp;
+            document.getElementById('sheet-title').innerText = lang.title;
+            document.getElementById('s-from').innerText = lang.sFrom;
+            document.getElementById('s-to').innerText = lang.sTo;
+            document.getElementById('s-prov').innerText = lang.sProv;
+            document.getElementById('s-site').innerText = lang.sSite;
+            document.getElementById('btn-ref').innerText = lang.bRef;
+            document.getElementById('btn-copy').innerText = lang.bCopy;
+            document.getElementById('btn-search').innerText = lang.bSearch;
+            document.getElementById('footerText').innerText = lang.foot + "০.০০";
+        }
+
+        function copySummary() {
+            const dep = document.getElementById('v-dep').innerText;
+            const exp = document.getElementById('v-exp').innerText;
+            const bal = document.getElementById('v-bal').innerText;
+            const text = `সপ্তবর্ণা এন্টারপ্রাইজ\nমোট জমা: ${dep}\nমোট খরচ: ${exp}\nউদ্বৃত্ত: ${bal}`;
+            navigator.clipboard.writeText(text).then(() => alert("কপি হয়েছে!"));
+        }
+
+        window.onload = () => {
+            const tbody = document.getElementById('tableBody');
+            for(let i=1; i<=20; i++) tbody.innerHTML += `<tr><td>${i}</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
+        };
+    </script>
+</body>
+</html>
